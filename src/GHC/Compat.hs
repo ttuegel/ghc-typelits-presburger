@@ -26,7 +26,9 @@ import           Type       as GHC.Compat (TCvSubst (..), TvSubstEnv,
                                            emptyTCvSubst)
 import           Type       as GHC.Compat (eqType, unionTCvSubst)
 import qualified Type       as Old
+#if __GLASGOW_HASKELL__ < 802
 import qualified TysPrim    as Old
+#endif
 import           TysWiredIn as GHC.Compat (boolTyCon)
 import           Unify      as Old (tcUnifyTy)
 #else
@@ -38,7 +40,12 @@ import TysWiredIn as GHC.Compat (promotedBoolTyCon)
 import Unify      as GHC.Compat (tcUnifyTy)
 #endif
 import TcPluginM (lookupOrig)
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 802
+import Type      as GHC.Compat (splitTyConApp_maybe)
+import RepType   as GHC.Compat (isVoidTy)
+#else
 import Type      as GHC.Compat (isVoidTy, splitTyConApp_maybe)
+#endif
 import Unique    as GHC.Compat (getKey, getUnique)
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 800
@@ -71,9 +78,11 @@ viewFunTy t@(TyConApp _ [t1, t2])
   | Old.isFunTy t = Just (t1, t2)
 viewFunTy _ = Nothing
 
+#if __GLASGOW_HASKELL__ < 802
 pattern FunTy :: Type -> Type -> Type
 pattern FunTy t1 t2 <- (viewFunTy -> Just (t1, t2)) where
   FunTy t1 t2 = Old.mkFunTy t1 t2
+#endif
 
 tcUnifyTy :: Type -> Type -> Maybe TvSubst
 tcUnifyTy t1 t2 = fromTCv <$> Old.tcUnifyTy t1 t2
